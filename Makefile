@@ -52,18 +52,17 @@ $(B)/$(U)/%.o: $(U)/%.c
 	$(CC) $(CFLAGS) -march=rv64g -c -o $@ $<
 
 $B/$K/kernel: $(OBJS) $K/kernel.ld $B/$U/initcode
+	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $B/$K/kernel $(OBJS)
 	$(OBJDUMP) -S $B/$K/kernel > $B/$K/kernel.asm
 	$(OBJDUMP) -t $B/$K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $B/$K/kernel.sym
 
 $B/$U/initcode: $U/initcode.S
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -march=rv64g -nostdinc -I. -Ikernel -c $U/initcode.S -o $B/$U/initcode.o
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $B/$U/initcode.out $B/$U/initcode.o
 	$(OBJCOPY) -S -O binary $B/$U/initcode.out $B/$U/initcode
 	$(OBJDUMP) -S $B/$U/initcode.o > $B/$U/initcode.asm
-
-tags: $(OBJS) _init
-	etags *.S *.c
 
 S_ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o
 ULIB := $(patsubst $(U)/%.o,$(B)/$(U)/%.o,$(S_ULIB))
@@ -120,12 +119,7 @@ $B/fs.img: $B/mkfs README $(UPROGS)
 -include $B/kernel/*.d $B/user/*.d
 
 clean:
-	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
-	*/*.o */*.d */*.asm */*.sym \
-	$U/initcode $U/initcode.out $K/kernel fs.img \
-	mkfs/mkfs .gdbinit \
-        $U/usys.S \
-	$(UPROGS)
+	rm -rf ./build/
 
 bins: $B/$K/kernel $B/fs.img
 
